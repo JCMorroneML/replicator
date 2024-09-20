@@ -206,6 +206,7 @@ static class ChannelExtensions {
                 && !channel.Reader.Completion.IsCompleted
                 && await channel.Reader.WaitToReadAsync(token).ConfigureAwait(false)) {
                 await foreach (var ctx in channel.Reader.ReadAllAsync(token).ConfigureAwait(false)) {
+                    Log.Info( "Reading from channel: {ctx}", JsonSerializer.Serialize(ctx));
                     await send(ctx).ConfigureAwait(false);
                     channelSizeGauge.Set(channel.Reader.Count);
                 }
