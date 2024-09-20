@@ -102,6 +102,8 @@ public class JsTransform {
                 return metaString.Length == 0 ? null : parser.Parse(metaString, ParserOptions);
             }
             catch (Exception) {
+                            
+
                 return null;
             }
         }

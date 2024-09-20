@@ -1,5 +1,6 @@
 using EventStore.Replicator.Observers;
 using EventStore.Replicator.Shared.Contracts;
+using EventStore.Replicator.Shared.Logging;
 using EventStore.Replicator.Shared.Pipeline;
 using EventStore.Replicator.Sink;
 using GreenPipes;
@@ -7,6 +8,9 @@ using GreenPipes;
 namespace EventStore.Replicator.Prepare; 
 
 public class PreparePipe {
+    
+                            
+    static readonly ILog Log = LogProvider.GetCurrentClassLogger();
     readonly IPipe<PrepareContext> _pipe;
 
     public PreparePipe(
@@ -40,7 +44,9 @@ public class PreparePipe {
                                 )
                             ).ConfigureAwait(false);
                         }
-                        catch (OperationCanceledException) { }
+                        catch (OperationCanceledException e) {
+                            Log.Info(e, "Prepare cancelled exception");
+                        }
                     }
                 );
             }

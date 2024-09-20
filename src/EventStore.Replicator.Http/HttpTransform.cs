@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using EventStore.Replicator.Shared.Contracts;
+using EventStore.Replicator.Shared.Logging;
 
 namespace EventStore.Replicator.Http;
 

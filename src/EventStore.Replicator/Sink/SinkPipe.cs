@@ -1,6 +1,8 @@
+using System.Text.Json;
 using EventStore.Replicator.Observers;
 using EventStore.Replicator.Partitioning;
 using EventStore.Replicator.Shared;
+using EventStore.Replicator.Shared.Logging;
 using EventStore.Replicator.Shared.Observe;
 using GreenPipes;
 using GreenPipes.Partitioning;
@@ -58,14 +60,24 @@ public class SinkPipe {
 }
 
 static class SinkPipelineExtensions {
+    static readonly ILog Log = LogProvider.GetCurrentClassLogger();
     public static void UseEventWriter(this IPipeConfigurator<SinkContext> cfg, IEventWriter writer)
         => cfg.UseExecuteAsync(
             async ctx => {
-                var position = await writer.WriteEvent(ctx.ProposedEvent, ctx.CancellationToken)
-                    .ConfigureAwait(false);
-
-                if (position != -1)
-                    ReplicationMetrics.WriterPosition.Set(position);
+                Log.Info("Sinking: {context}", JsonSerializer.Serialize(ctx));
+                
+                try {
+                    var position = await writer.WriteEvent(ctx.ProposedEvent, ctx.CancellationToken)
+                        .ConfigureAwait(false);
+                    
+                    if (position != -1)
+                        ReplicationMetrics.WriterPosition.Set(position);
+                }
+                catch (Exception e) {
+                    Log.Error(e, "Error writing event: {Event}", ctx.ProposedEvent);
+                    throw;
+                }
+                
             }
         );
 

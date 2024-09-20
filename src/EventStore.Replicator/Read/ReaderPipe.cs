@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using EventStore.Replicator.Observers;
 using EventStore.Replicator.Prepare;
 using EventStore.Replicator.Shared;
@@ -8,7 +9,8 @@ using GreenPipes;
 namespace EventStore.Replicator.Read;
 
 public class ReaderPipe {
-    readonly IPipe<ReaderContext> _pipe;
+    static readonly ILog                 Log = LogProvider.GetCurrentClassLogger();
+    readonly        IPipe<ReaderContext> _pipe;
 
     public ReaderPipe(IEventReader reader, ICheckpointStore checkpointStore, Func<PrepareContext, ValueTask> send) {
         var log = LogProvider.GetCurrentClassLogger();
@@ -42,14 +44,16 @@ public class ReaderPipe {
                     start,
                     async read => {
                         ReplicationMetrics.ReadingPosition.Set(read.Position.EventPosition);
+                        
+                        log.Info("Reading event {event}", read.ToString());
 
                         await send(new PrepareContext(read, ctx.CancellationToken)).ConfigureAwait(false);
                     },
                     ctx.CancellationToken
                 ).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) {
-                // it's ok
+            catch (OperationCanceledException e) {
+                log.Error(e, "Reader cancelled");
             }
             catch (Exception e) {
                 log.Error(e, "Reader error");
@@ -65,7 +69,7 @@ public class ReaderPipe {
             await _pipe.Send(new ReaderContext(stoppingToken));
         }
         catch (Exception e) {
-            Console.WriteLine(e);
+            Log.Error(e, "Reader failed");
             throw;
         }
     }
