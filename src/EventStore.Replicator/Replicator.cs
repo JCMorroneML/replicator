@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Threading.Channels;
 using EventStore.Replicator.Prepare;
 using EventStore.Replicator.Read;
@@ -90,6 +91,7 @@ public static class Replicator {
                 ReplicationStatus.Stop();
 
                 while (sinkChannel.Reader.Count > 0) {
+                    Log.Info("Sink channel is not empty");
                     await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
                     Log.Info("Waiting for the sink pipe to exhaust ({Left} left)...", sinkChannel.Reader.Count);
                     await Task.Delay(1000, CancellationToken.None).ConfigureAwait(false);
@@ -125,8 +127,10 @@ public static class Replicator {
             await prepareTask.ConfigureAwait(false);
             await writerTask.ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { }
-        catch (Exception e) {
+        catch (OperationCanceledException e) {
+            Log.Error(e, "Stop cancelled");
+        }        
+	catch (Exception e) {
             Log.Error(e, "Error stopping pending tasks");
         }
 
@@ -185,6 +189,7 @@ public static class Replicator {
 }
 
 static class ChannelExtensions {
+    static readonly ILog Log = LogProvider.GetCurrentClassLogger();
     public static async Task Shovel<T>(
         this Channel<T>   channel,
         Func<T, Task>     send,
@@ -205,8 +210,8 @@ static class ChannelExtensions {
                 }
             }
         }
-        catch (OperationCanceledException) {
-            // it's ok
+        catch (OperationCanceledException e) {
+  	    Log.Error(e, "Shovel cancelled");            // it's ok
         }
 
         afterStop();
