@@ -106,7 +106,7 @@ public static class Replicator {
                 Log.Info("Will restart in 5 sec");
 
                 try {
-                    await Task.Delay(5000, stoppingToken);
+                    await Task.Delay(1000, stoppingToken);
                 }
                 catch (OperationCanceledException) {
                     // stopping now
@@ -185,6 +185,7 @@ public static class Replicator {
 }
 
 static class ChannelExtensions {
+    static readonly ILog Log = LogProvider.GetCurrentClassLogger();
     public static async Task Shovel<T>(
         this Channel<T>   channel,
         Func<T, Task>     send,
@@ -193,8 +194,9 @@ static class ChannelExtensions {
         IGaugeMetric      channelSizeGauge,
         CancellationToken token
     ) {
+        Log.Error("Shovel starting");
         beforeStart();
-
+        
         try {
             while (!token.IsCancellationRequested &&
                    !channel.Reader.Completion.IsCompleted &&
@@ -205,8 +207,8 @@ static class ChannelExtensions {
                 }
             }
         }
-        catch (OperationCanceledException) {
-            // it's ok
+        catch (OperationCanceledException e) {
+            Log.Error(e.Message, "Shovel stopped");
         }
 
         afterStop();
