@@ -83,7 +83,7 @@ public static class Replicator {
                 if (!replicatorOptions.RunContinuously) {
                     do {
                         Log.Info("Closing the prepare channel...");
-                        await Task.Delay(1000, CancellationToken.None).ConfigureAwait(false);
+                        await Task.Delay(5000, CancellationToken.None).ConfigureAwait(false);
                     } while (!prepareChannel.Writer.TryComplete());
                 }
 
@@ -92,7 +92,7 @@ public static class Replicator {
                 while (sinkChannel.Reader.Count > 0) {
                     await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
                     Log.Info("Waiting for the sink pipe to exhaust ({Left} left)...", sinkChannel.Reader.Count);
-                    await Task.Delay(1000, CancellationToken.None).ConfigureAwait(false);
+                    await Task.Delay(5000, CancellationToken.None).ConfigureAwait(false);
                 }
 
                 await Flush().ConfigureAwait(false);
@@ -106,7 +106,7 @@ public static class Replicator {
                 Log.Info("Will restart in 5 sec");
 
                 try {
-                    await Task.Delay(1000, stoppingToken);
+                    await Task.Delay(5000, stoppingToken);
                 }
                 catch (OperationCanceledException) {
                     // stopping now

@@ -1,6 +1,6 @@
 replicator:
   reader:
-    connectionString: esdb://localhost:2114?tls=false
+    connectionString: esdb://localhost:2113?tls=false
     protocol: grpc
   sink:
     connectionString: esdb://localhost:2114?tls=false
