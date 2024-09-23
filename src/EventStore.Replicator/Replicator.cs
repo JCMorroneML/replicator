@@ -196,39 +196,29 @@ static class ChannelExtensions {
     ) {
         Log.Error("Shovel starting");
         beforeStart();
-        
+
         try {
-            while (true) {
-                if (!token.IsCancellationRequested
-                 && !channel.Reader.Completion.IsCompleted) {
-                    Log.Error("Shovel will read from channel");
-                    var readSuccess = await channel.Reader.WaitToReadAsync(token).ConfigureAwait(false);
-                    await foreach (var ctx in channel.Reader.ReadAllAsync(token).ConfigureAwait(false)) {
-                        Log.Error("Shovel reading event from channel");
-                        await send(ctx).ConfigureAwait(false);
-                        channelSizeGauge.Set(channel.Reader.Count);
-                        Log.Error("Shovel finished reading event from channel");
-                    }
-                    
-                    Log.Error("Shovel excited channel foreach loop");
-                    
-                    if (!readSuccess) {
-                        Log.Error("Shovel stopping - Read Failure");
+            while (!token.IsCancellationRequested
+                && !channel.Reader.Completion.IsCompleted
+                && await channel.Reader.WaitToReadAsync(token).ConfigureAwait(false)) {
+                try {
+                    using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutCts.Token);
+                    var ctx = await channel.Reader.ReadAsync(cts.Token).ConfigureAwait(false);
+                    await send(ctx).ConfigureAwait(false);
+                    channelSizeGauge.Set(channel.Reader.Count);
+                }
+                catch (OperationCanceledException) {
+                    if (token.IsCancellationRequested) {
+                        Log.Info("Shovel cancelled");
                         break;
                     }
                 }
-                else {
-                    Log.Error("Shovel stopping - Loop exited");
-                    break;
-                }
             }
-            Log.Error("Shovel stopped - Loop exited");
-        }
-        catch (OperationCanceledException e) {
-            Log.Error(e.Message, "Shovel stopped with exception");
         }
         catch (Exception e) {
-            Log.Error(e.Message, "Shovel stopped with exception");
+            Log.Error(e, "Shovel crashed");
+            throw;
         }
 
         afterStop();
