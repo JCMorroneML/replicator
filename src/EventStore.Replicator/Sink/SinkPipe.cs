@@ -15,7 +15,7 @@ public class SinkPipe {
             cfg => {
                 cfg.UseRetry(
                     r => {
-                        r.Incremental(10, TimeSpan.Zero, TimeSpan.FromMilliseconds(10));
+                        r.Incremental(1, TimeSpan.Zero, TimeSpan.FromMilliseconds(250));
                         r.ConnectRetryObserver(new LoggingRetryObserver());
                     }
                 );

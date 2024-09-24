@@ -90,12 +90,12 @@ public static class Replicator {
                 ReplicationStatus.Stop();
 
                 while (sinkChannel.Reader.Count > 0) {
-                    await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
+                    await checkpointStore.Flush(writerCts.Token).ConfigureAwait(false);
                     Log.Info("Waiting for the sink pipe to exhaust ({Left} left)...", sinkChannel.Reader.Count);
-                    await Task.Delay(5000, CancellationToken.None).ConfigureAwait(false);
+                    await Task.Delay(5000, writerCts.Token).ConfigureAwait(false);
                 }
 
-                await Flush().ConfigureAwait(false);
+                await Flush(writerCts.Token).ConfigureAwait(false);
 
                 if (stopping) {
                     sinkChannel.Writer.Complete();
@@ -130,7 +130,7 @@ public static class Replicator {
             Log.Error(e, "Error stopping pending tasks");
         }
 
-        await Flush().ConfigureAwait(false);
+        await Flush(writerCts.Token).ConfigureAwait(false);
         
         Log.Info("Replicator stopped");
 
@@ -140,9 +140,9 @@ public static class Replicator {
             writerCts.Cancel();
         }
 
-        async Task Flush() {
+        async Task Flush(CancellationToken ct) {
             Log.Info("Storing the last known checkpoint");
-            await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
+            await checkpointStore.Flush(ct).ConfigureAwait(false);
         }
 
         static Task CreateChannelShovel<T>(
