@@ -90,6 +90,10 @@ public static class Replicator {
                 ReplicationStatus.Stop();
 
                 while (sinkChannel.Reader.Count > 0) {
+                    if (writerTask.IsFaulted) {
+                        Log.Error("Writer task threw an exception cannot flush", writerTask.Exception);
+                        break;
+                    }
                     await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
                     Log.Info("Waiting for the sink pipe to exhaust ({Left} left)...", sinkChannel.Reader.Count);
                     await Task.Delay(5000, CancellationToken.None).ConfigureAwait(false);
