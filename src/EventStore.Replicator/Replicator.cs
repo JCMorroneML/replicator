@@ -96,7 +96,7 @@ public static class Replicator {
                     }
                     await checkpointStore.Flush(CancellationToken.None).ConfigureAwait(false);
                     Log.Info("Waiting for the sink pipe to exhaust ({Left} left)...", sinkChannel.Reader.Count);
-                    await Task.Delay(5000, CancellationToken.None).ConfigureAwait(false);
+                    await Task.Delay(5000, writerCts.Token).ConfigureAwait(false);
                 }
 
                 await Flush().ConfigureAwait(false);
